@@ -1,0 +1,7 @@
+---
+- name: Riavvio WireGuard
+  service:
+    name: wg-quick@wg0
+    state: restarted
+    enabled: yes
+  become: yes

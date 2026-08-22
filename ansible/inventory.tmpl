@@ -1,0 +1,18 @@
+[ec2]
+# Uso StrictHostKeyChecking=no perché l'IP pubblico EC2 cambia ad ogni apply.
+# Accettabile per un progetto personale/test. In produzione, userei un bastion host o chiavi pre-distribuite.
+${ec2_ip} ansible_user=ubuntu ansible_ssh_private_key_file=../terraform-key.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[raspberry]
+${rpi_ip} ansible_user=ubuntu
+
+# Gruppi Astratti (Hardware Agnostic)
+[vpn_server:children]
+ec2
+
+[vpn_clients:children]
+raspberry
+
+[vpn_nodes:children]
+vpn_server
+vpn_clients

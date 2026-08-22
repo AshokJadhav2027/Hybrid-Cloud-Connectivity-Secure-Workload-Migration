@@ -1,0 +1,12 @@
+---
+# ============================================
+# Nginx Reverse Proxy Configuration Defaults
+# ============================================
+
+# Backend server configuration (via WireGuard tunnel)
+# Dynamically uses the VPN client's address (strips CIDR suffix)
+backend_host: "{{ wireguard_client_address | regex_replace('/[0-9]+$', '') }}"
+backend_port: 8080
+
+# Nginx settings
+nginx_listen_port: 80

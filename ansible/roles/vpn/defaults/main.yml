@@ -1,0 +1,24 @@
+---
+# ============================================
+# WireGuard VPN Configuration Defaults
+# ============================================
+
+# WireGuard Interface Settings
+wireguard_interface: wg0
+wireguard_port: 51820
+wireguard_mtu: 1280
+
+# Tunnel Network (VPN address space)
+wireguard_network: "10.100.0.0/24"
+# NOTE: wireguard_server_address and wireguard_client_address
+# are defined in group_vars/all.yml (shared with reverse-proxy role)
+
+# Networks to route through the tunnel
+# Client's local network (routed through tunnel)
+client_home_network: "192.168.0.0/24"
+# AWS VPC network
+aws_vpc_network: "10.0.0.0/16"
+
+# Keepalive for NAT traversal (seconds)
+# Required when one peer is behind NAT (e.g., Raspberry Pi at home)
+wireguard_keepalive: 25

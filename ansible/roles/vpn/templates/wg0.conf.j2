@@ -1,0 +1,25 @@
+[Interface]
+Address = {{ wireguard_server_address if inventory_hostname in groups['vpn_server'] else wireguard_client_address }}
+ListenPort = {{ wireguard_port }}
+PrivateKey = {{ wg_private_key_file['content'] | b64decode | trim }}
+MTU = {{ wireguard_mtu }}
+
+{% if inventory_hostname in groups['vpn_server'] %}
+# Configurazione Server VPN - Masquerade NAT per traffico VPN
+PostUp = iptables -A FORWARD -i {{ wireguard_interface }} -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+PostDown = iptables -D FORWARD -i {{ wireguard_interface }} -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ ansible_default_ipv4.interface }} -j MASQUERADE
+{% endif %}
+
+[Peer]
+{% if inventory_hostname in groups['vpn_server'] %}
+# Peer: VPN Client
+PublicKey = {{ hostvars[groups['vpn_clients'][0]]['wireguard_public_key'] }}
+AllowedIPs = {{ wireguard_client_address | regex_replace('/24$', '/32') }}, {{ client_home_network }}
+{% else %}
+# Peer: VPN Server
+PublicKey = {{ hostvars[groups['vpn_server'][0]]['wireguard_public_key'] }}
+Endpoint = {{ hostvars[groups['vpn_server'][0]]['ansible_host'] | default(groups['vpn_server'][0]) }}:{{ wireguard_port }}
+AllowedIPs = {{ wireguard_network }}, {{ aws_vpc_network }}
+PersistentKeepalive = {{ wireguard_keepalive }}
+{% endif %}
+

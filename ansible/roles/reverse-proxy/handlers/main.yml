@@ -1,0 +1,6 @@
+---
+- name: Riavvio Nginx
+  service:
+    name: nginx
+    state: restarted
+  become: yes

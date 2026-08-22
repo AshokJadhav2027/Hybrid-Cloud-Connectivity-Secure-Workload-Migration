@@ -1,0 +1,26 @@
+---
+# ============================================
+# REVERSE PROXY SETUP
+# ============================================
+# Installazione di nginx per agire da frontend web.
+# Riceverà le richieste pubbliche su porta 80 e le girerà al Raspberry Pi via tunnel VPN.
+- name: Installazione Web Server Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+  become: yes
+  register: apt_result
+  until: apt_result is success
+  retries: 10
+  delay: 10
+
+# Configurazione del virtual host.
+# Notare che la destination del proxy_pass sarà l'IP WireGuard interno del Raspberry,
+# garantendo che il traffico viaggi cifrato dentro il tunnel.
+- name: Applicazione della configurazione Reverse Proxy Nginx
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/default
+  become: yes
+  notify: Riavvio Nginx

@@ -1,0 +1,73 @@
+---
+# ============================================
+# INSTALLAZIONE & KEY MANAGEMENT
+# ============================================
+# Installazione del pacchetto kernel module e tools utente.
+- name: Installazione pacchetto WireGuard
+  apt:
+    name: wireguard
+    state: present
+    update_cache: yes
+  become: yes
+  register: apt_result
+  until: apt_result is success
+  retries: 10
+  delay: 20
+
+# Abilitazione del forwarding IP a livello kernel.
+# Senza questo, il server riceve i pacchetti ma non li inoltra alla destinazione finale.
+- name: Abilitazione kernel IPv4 forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+  become: yes
+
+# Generazione della Private Key solo se non esiste già (idempotenza).
+# Uso `tee` invece di redirect `>` per gestire meglio i permessi sudo.
+- name: Generazione chiave privata WireGuard (se mancante)
+  shell: "wg genkey | tee /etc/wireguard/privatekey"
+  args:
+    creates: /etc/wireguard/privatekey
+  become: yes
+  no_log: true  # Non vengono loggate le chiavi private nell'output di Ansible.
+  register: wg_private_key_gen
+
+# Impostazione permessi 0600 prima di fare qualsiasi altra cosa.
+# Serve per evitare che altri utenti sul sistema possano leggere la chiave.
+- name: Messa in sicurezza permessi chiave privata
+  file:
+    path: /etc/wireguard/privatekey
+    mode: '0600'
+  become: yes
+
+# Derivazione della Public Key dalla Private Key esistente.
+# La Public Key non è segreta, serve per configurare i peer.
+- name: Derivazione chiave pubblica WireGuard
+  shell: "cat /etc/wireguard/privatekey | wg pubkey | tee /etc/wireguard/publickey"
+  args:
+    creates: /etc/wireguard/publickey
+  become: yes
+  register: wg_public_key_gen
+
+# Legge il contenuto del file per usarlo come variabile in Ansible.
+- name: Lettura contenuto Public Key
+  slurp:
+    src: /etc/wireguard/publickey
+  register: wg_public_key_file
+  become: yes
+
+# Registrazione della Public Key nei fact di Ansible.
+# Questo permette di accedere alla chiave di host A mentre viene configurato host B.
+- name: Esposizione Public Key come ansible_fact
+  set_fact:
+    wireguard_public_key: "{{ wg_public_key_file['content'] | b64decode | trim }}"
+
+# Legge anche la private key per usarla nel template wg0.conf dell'host corrente.
+- name: Lettura contenuto Private Key (per config locale)
+  slurp:
+    src: /etc/wireguard/privatekey
+  register: wg_private_key_file
+  become: yes

@@ -1,0 +1,30 @@
+---
+# ============================================
+# CONFIGURAZIONE INTERFACCIA
+# ============================================
+# Viene riletta la chiave privata in memoria (potrebbe essere stata generata in una run precedente).
+# È necessario per popolare il template {{ wg_private_key }}.
+- name: Lettura Private Key per configurazione
+  slurp:
+    src: /etc/wireguard/privatekey
+  register: wg_private_key_file
+  become: yes
+
+# Applicazione template Jinja2.
+# Vengono usati i facts raccolti dagli host per popolare la sezione [Peer] di questo host.
+- name: Generazione wg0.conf
+  template:
+    src: wg0.conf.j2
+    dest: /etc/wireguard/wg0.conf
+    mode: '0600'
+  become: yes
+  notify: Riavvio WireGuard
+
+# Riavvio esplicito del servizio per applicare qualsiasi modifica alla configurazione.
+# Nota: `restarted` invece di `started` garantisce che wg0.conf venga sempre riletto.
+- name: Riavvio e abilitazione servizio WireGuard
+  service:
+    name: wg-quick@wg0
+    state: restarted
+    enabled: yes
+  become: yes

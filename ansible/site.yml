@@ -1,0 +1,56 @@
+---
+# ============================================
+# ORCHESTRAZIONE GENERALE
+# ============================================
+# Questo playbook funge da "Director" per l'intera configurazione.
+# Ho diviso il processo in fasi distinte per gestire la dipendenza circolare delle chiavi WireGuard:
+# 1. Generazione chiavi su tutti i nodi.
+# 2. Scambio chiavi e creazione config file.
+# 3. Setup servizi applicativi (Nginx).
+
+# FASE 1: Preparazione Ambiente e Gestione Chiavi
+# Installazione WireGuard e gestione delle chiavi private/pubbliche.
+# Non viene ancora configurata l'interfaccia perché manca la Public Key del peer.
+- name: "[Fase 1] Bootstrapping WireGuard & Generazione Chiavi"
+  hosts: all
+  become: yes
+  gather_facts: yes
+  pre_tasks:
+    # Attendo che cloud-init finisca per evitare l'errore "Could not get lock /var/lib/dpkg/lock"
+    - name: Attesa completamento cloud-init (evito race condition su apt lock)
+      command: cloud-init status --wait
+      changed_when: false
+      when: inventory_hostname in groups['vpn_server']
+      ignore_errors: yes  # Ignoro su macchine non cloud (es. Raspberry Pi)
+
+    # Sanity check: se dpkg è stato interrotto, viene riparato prima di procedere.
+    - name: Verifica consistenza database pacchetti
+      command: dpkg --configure -a
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      become: yes
+      when: inventory_hostname in groups['vpn_server']
+      changed_when: false
+  roles:
+    - vpn
+
+# FASE 2: Configurazione Tunnel
+# Ora che tutti i nodi hanno generato le chiavi (salvate come facts nella fase 1),
+# vengono creati i file di configurazione `wg0.conf` incrociando i dati.
+- name: "[Fase 2] Configurazione WireGuard & Peering"
+  hosts: all
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Applicazione configurazione WireGuard
+      include_role:
+        name: vpn
+        tasks_from: configure
+
+# FASE 3: Application Layer
+# Installazione del Reverse Proxy per esporre i servizi interni (via tunnel) su internet pubblico.
+- name: "[Fase 3] Setup Reverse Proxy"
+  hosts: vpn_server
+  become: yes
+  roles:
+    - reverse-proxy
