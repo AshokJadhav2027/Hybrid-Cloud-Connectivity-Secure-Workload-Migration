@@ -1,0 +1,15 @@
+# Copia questo file come terraform.tfvars e inserisci i tuoi valori reali
+# IMPORTANTE: Non committare MAI terraform.tfvars su Git!
+
+# Il tuo IP pubblico di casa (con CIDR notation)
+# Trova il tuo IP su: https://whatismyipaddress.com/
+my_home_ip = "YOUR_PUBLIC_IP/32"  # es: "203.0.113.50/32"
+
+# Email per notifiche di budget AWS
+notification_email = "your-email@example.com"
+
+# (Opzionale) AWS region - default: eu-central-1
+# aws_region = "eu-central-1"
+
+# (Opzionale) IP locale del Raspberry Pi - default: 192.168.0.99
+# rpi_ip = "192.168.0.99"

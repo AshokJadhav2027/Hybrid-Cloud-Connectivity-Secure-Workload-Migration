@@ -1,0 +1,75 @@
+### Terraform ###
+# Directory locale dove terraform scarica i plugin (molto pesante, non committare mai)
+.terraform/
+
+# File di stato (CRITICO: contiene password e IP in chiaro. MAI committare)
+*.tfstate
+*.tfstate.*
+
+# Log di crash
+crash.log
+crash.log.*
+
+# File di variabili che contengono segreti (es. password, key AWS)
+*.tfvars
+*.auto.tfvars
+
+# È buona norma ignorare i file di override locali
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lock file (VEDI NOTA SOTTO nella sezione dubbi)
+# .terraform.lock.hcl
+
+### Ansible ###
+# File creati quando un playbook fallisce (inutili nel repo)
+*.retry
+
+# Directory temporanee di Ansible
+.ansible/
+
+# Log file se configurati
+ansible.log
+
+### File Generati Dinamicamente (Specifico per il tuo progetto) ###
+# Poiché crei questo file con Terraform, non vuoi committarlo.
+# Deve essere ricreato da chiunque lanci "terraform apply".
+ansible/inventory.ini
+
+### Credenziali e Chiavi (SICUREZZA MASSIMA) ###
+# Ignora qualsiasi chiave privata
+*.pem
+*.key
+*.pub
+id_rsa
+id_rsa.pub
+
+### Editor e OS ###
+# Configurazione specifica di VS Code (se non vuoi forzarla agli altri)
+.vscode/
+
+# File di sistema Windows/Mac (comuni quando si passa file tra OS)
+.DS_Store
+Thumbs.db
+
+### WireGuard Keys (se salvate localmente per test) ###
+**/privatekey
+**/publickey
+*.wg.key
+
+### Secrets generici ###
+secrets/
+*.secret
+*.secrets
+
+### IDE e Editor Addizionali ###
+.idea/
+*.swp
+*.swo
+*~
+
+### Logs ###
+*.log
+logs/
